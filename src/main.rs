@@ -1,11 +1,27 @@
 #[cfg(feature = "ssr")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    use std::env;
+
     use actix_files::Files;
     use actix_web::*;
+    use dotenvy::dotenv;
     use leptos::*;
     use leptos_actix::{generate_route_list, LeptosRoutes};
+    use sqlx::postgres::PgPoolOptions;
     use user_authentication_leptos_actix_sqlx::app::*;
+    dotenv().ok();
+
+    std::env::set_var("RUST_LOG", "debug");
+    env_logger::init();
+
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL has not been set!");
+
+    let connection = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await
+        .expect("Unable to connect to the database!");
 
     let conf = get_configuration(None).await.unwrap();
     let addr = conf.leptos_options.site_addr;
@@ -18,14 +34,15 @@ async fn main() -> std::io::Result<()> {
         let site_root = &leptos_options.site_root;
 
         App::new()
-            // serve JS/WASM/CSS from `pkg`
-            .service(Files::new("/pkg", format!("{site_root}/pkg")))
-            // serve other assets from the `assets` directory
-            .service(Files::new("/assets", site_root))
-            // serve the favicon from /favicon.ico
-            .service(favicon)
-            .leptos_routes(leptos_options.to_owned(), routes.to_owned(), App)
-            .app_data(web::Data::new(leptos_options.to_owned()))
+        // serve JS/WASM/CSS from `pkg`
+        .service(Files::new("/pkg", format!("{site_root}/pkg")))
+        // serve other assets from the `assets` directory
+        .service(Files::new("/assets", site_root))
+        // serve the favicon from /favicon.ico
+        .service(favicon)
+        .leptos_routes(leptos_options.to_owned(), routes.to_owned(), App)
+        .app_data(web::Data::new(leptos_options.to_owned()))
+        .app_data(web::Data::new(connection.clone()))
         //.wrap(middleware::Compress::default())
     })
     .bind(&addr)?
