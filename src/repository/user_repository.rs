@@ -18,7 +18,7 @@ pub async fn find_by_id(user_id: i32) -> Result<User, ServerFnError> {
         .map_err(|e| ServerFnError::new(e.to_string()))
 }
 
-#[server(CreateUser, "/api", "Url", "users")]
+#[server(CreateUser, "/api", "Url", "users/create")]
 pub async fn create(name: String, email_address: String, role: String) -> Result<User, ServerFnError> {
     let conn: Data<Pool<Postgres>> = extract().await?;
     let pool = conn.into_inner();
