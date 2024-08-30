@@ -35,6 +35,12 @@ pub async fn find_paginated(page: i64, page_size: i64, email_address: Option<Str
     use super::get_db;
     let pool = get_db().await?;
 
+    let mut page = page;
+
+    if email_address.is_some() {
+        page = 1;
+    }
+    
     let offset = (page - 1) * page_size;
 
     let users = match email_address {
