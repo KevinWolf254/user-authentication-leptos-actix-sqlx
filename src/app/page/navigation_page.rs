@@ -1,8 +1,9 @@
 use leptos::*;
+use leptos_router::Outlet;
 
 /// Renders the home page of your application.
 #[component]
-pub fn HomePage() -> impl IntoView {
+pub fn NavigationPage() -> impl IntoView {
     // Creates a reactive value to update the button
     let (collapse, set_collapse) = create_signal(false);
     let toggle_collapse = move |_| set_collapse.update(|c| { *c = !*c; } );
@@ -16,6 +17,17 @@ pub fn HomePage() -> impl IntoView {
                         <a href="#">"CodzSword"</a>
                     </div>
                     // <!-- Sidebar Navigation -->
+                    <ul class="sidebar-nav">
+                        <li class="sidebar-header">
+                            "Administration"
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="users" class="sidebar-link">
+                                <i class="bi bi-people-fill pe-2"></i>
+                                "Users"
+                            </a>
+                        </li>
+                    </ul>
                     <ul class="sidebar-nav">
                         <li class="sidebar-header">
                             "Tools & Components"
@@ -146,7 +158,8 @@ pub fn HomePage() -> impl IntoView {
                         </div>
                     </nav>
                     <div class="mb-3">
-                        <h3>Bootstrap Sidebar Tutorial</h3>
+                        // <h3>Bootstrap Sidebar Tutorial</h3>
+                        <Outlet/>
                     </div>
                 </main>
             </div>

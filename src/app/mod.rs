@@ -3,7 +3,8 @@ use leptos_meta::*;
 use leptos_router::*;
 
 pub mod page;
-use page::{forgot_password_page::ForgotPasswordPage, home_page::HomePage, not_found_page::NotFoundPage, reset_password_page::ResetPasswordPage, signin_page::SigninPage, signup_page::SignupPage};
+use page::{navigation_page::NavigationPage, user::{user_list_page::UserListPage, user_profile_page::UserProfilePage}};
+pub mod component;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -21,10 +22,14 @@ pub fn App() -> impl IntoView {
 
         // content for this welcome page
         <Router>
+        
             <main>
                 <Routes>
-                    <Route path="" view=HomePage/>
-                    <Route path="/*any" view=NotFoundPage/>
+                    <Route path="" view=NavigationPage>
+                        <Route path="/users" view=UserListPage/>
+                        <Route path="/users/:id" view=UserProfilePage/>
+                    </Route>
+                    // <Route path="/*any" view=NotFoundPage/>
                 </Routes>
             </main>
         </Router>

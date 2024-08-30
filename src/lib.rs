@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 pub mod app;
-pub mod entity;
-pub mod repository;
+mod entity;
+mod repository;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

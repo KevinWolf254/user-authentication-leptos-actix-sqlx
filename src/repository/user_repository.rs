@@ -1,15 +1,10 @@
-use std::sync::Arc;
-
 use leptos::{ServerFnError, server};
-use crate::{entity::user::User, CountResult, PaginatedResult};
-use actix_web::web::Data;
-use leptos_actix::extract;
-use sqlx::{Pool, Postgres};
+use crate::{entity::user::User, PaginatedResult};
 
 #[server(FindById, "/api", "GetJson", "users")]
 pub async fn find_by_id(user_id: i32) -> Result<User, ServerFnError> {
-    let conn = extract::<Data<Pool<Postgres>>>().await?;
-    let pool: Arc<Pool<Postgres>> = conn.into_inner();
+    use super::get_db;
+    let pool = get_db().await?;
 
     sqlx::query_as!(User, 
         r#"SELECT * FROM "DEMO"."USER" WHERE user_id = $1 "#, user_id)
@@ -20,8 +15,8 @@ pub async fn find_by_id(user_id: i32) -> Result<User, ServerFnError> {
 
 #[server(CreateUser, "/api", "Url", "users/create")]
 pub async fn create(name: String, email_address: String, role: String) -> Result<User, ServerFnError> {
-    let conn: Data<Pool<Postgres>> = extract().await?;
-    let pool = conn.into_inner();
+    use super::get_db;
+    let pool = get_db().await?;
 
     sqlx::query_as!(User, 
         r#"INSERT INTO "DEMO"."USER" (name, email_address, role) VALUES ($1, $2, $3) RETURNING * "#, 
@@ -33,16 +28,26 @@ pub async fn create(name: String, email_address: String, role: String) -> Result
 }
 
 #[server(FindPaginated, "/api", "GetJson", "users/paginated")]
-pub async fn find_paginated(page: i64, page_size: i64) -> Result<PaginatedResult<User>, ServerFnError> {
-    let conn: Data<Pool<Postgres>> = extract().await?;
-    let pool = conn.into_inner();
+pub async fn find_paginated(page: i64, page_size: i64, email_address: Option<String>) -> Result<PaginatedResult<User>, ServerFnError> {
+    #[cfg(feature = "ssr")]
+    use crate::CountResult;
+
+    use super::get_db;
+    let pool = get_db().await?;
 
     let offset = (page - 1) * page_size;
-    let users =   sqlx::query_as!(User, r#"SELECT * FROM "DEMO"."USER" ORDER BY USER_id DESC LIMIT $1 OFFSET $2"#, page_size, offset)
+
+    let users = match email_address {
+        Some(email) => sqlx::query_as!(User, r#"SELECT * FROM "DEMO"."USER" WHERE EMAIL_ADDRESS ILIKE '%' || $1 || '%' ORDER BY USER_id DESC LIMIT $2 OFFSET $3"#, email, page_size, offset)
             .fetch_all(&*pool)
             .await
-            .map_err(|e| ServerFnError::new(e.to_string()))?;
-
+            .map_err(|e| ServerFnError::new(e.to_string()))?,
+        None => sqlx::query_as!(User, r#"SELECT * FROM "DEMO"."USER" ORDER BY USER_id DESC LIMIT $1 OFFSET $2"#, page_size, offset)
+            .fetch_all(&*pool)
+            .await
+            .map_err(|e| ServerFnError::new(e.to_string()))?
+    };
+    
      let total = sqlx::query_as!(CountResult, 
             r#"SELECT COUNT(*) FROM "DEMO"."USER""#)
             .fetch_one(&*pool)
